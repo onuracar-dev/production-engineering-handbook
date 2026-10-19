@@ -9,6 +9,10 @@ export interface PreFlightRequest {
 
 export type CdpSender = (method: string, params: Record<string, unknown>) => Promise<unknown>;
 
+// Allow-list, not deny-list: fetch() accepts any token as a method, so WebDAV
+// verbs (MKCOL, MOVE, LOCK, PROPPATCH) or PURGE would slip past a list of four.
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 export class MidFlightRequestGuard {
   private dryRunEnabled: boolean = true;
   private pendingPreFlights: Map<string, PreFlightRequest> = new Map();
@@ -29,7 +33,7 @@ export class MidFlightRequestGuard {
     const httpMethod = String(req.method || "GET").toUpperCase();
     const requestId = params.requestId;
 
-    const isMutating = ["POST", "PUT", "DELETE", "PATCH"].includes(httpMethod);
+    const isMutating = !SAFE_METHODS.has(httpMethod);
 
     if (this.dryRunEnabled && isMutating) {
       const preFlight: PreFlightRequest = {
@@ -46,6 +50,14 @@ export class MidFlightRequestGuard {
     } else {
       this.sendCdp("Fetch.continueRequest", { requestId }).catch(() => {});
     }
+  }
+
+  /** Subscribe the approval UI to held requests; returns an unsubscribe function. */
+  public onPreFlight(listener: (req: PreFlightRequest) => void): () => void {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== listener);
+    };
   }
 
   public async approve(requestId: string): Promise<void> {

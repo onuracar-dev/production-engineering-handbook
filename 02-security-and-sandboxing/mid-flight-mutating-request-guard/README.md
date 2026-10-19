@@ -33,7 +33,7 @@ We hooked directly into Chrome DevTools Protocol's low-level `Fetch` domain (`Fe
 
 1. **In-Flight Suspension:** Before an HTTP request frame leaves the browser process, Chrome fires `Fetch.requestPaused`.
 2. **Verb Filter:** Safe read-only requests (`GET`, `HEAD`, `OPTIONS`) are immediately forwarded via `Fetch.continueRequest`.
-3. **Interactive Human Sign-Off:** Mutating requests (`POST`, `PUT`, `DELETE`, `PATCH`) are held in memory. The desktop UI presents the destination URL, method, and payload to the user.
+3. **Interactive Human Sign-Off:** Every other method is treated as mutating and held in memory: `POST`, `PUT`, `DELETE`, `PATCH`, and also WebDAV verbs (`MKCOL`, `MOVE`, `LOCK`, ...) or `PURGE`, since `fetch()` accepts any method token. The desktop UI presents the destination URL, method, and payload to the user.
 4. **Deterministic Gate:** The request is only permitted onto the network wire upon explicit human approval.
 
 ---
