@@ -1,5 +1,5 @@
 // 1. Calculate W3C relative luminance bubbling through transparent parent nodes
-const rgb = (v) => (v.match(/[d.]+/g) || []).slice(0, 3).map(Number);
+const rgb = (v) => (v.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
 const lum = (v) => {
     const c = rgb(v).map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; });
     return 0.2126 * (c[0] || 0) + 0.7152 * (c[1] || 0) + 0.0722 * (c[2] || 0);
