@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const componentPath = path.resolve(__dirname, '../src/TrendChart.tsx');
-const content = fs.readFileSync(componentPath, 'utf8');
+// Normalize CRLF so a Windows checkout (core.autocrlf=true) measures the same bytes as the LF blob in git
+const content = fs.readFileSync(componentPath, 'utf8').replace(/\r\n/g, '\n');
 
 const rawBytes = Buffer.byteLength(content, 'utf8');
 const gzipped = zlib.gzipSync(content, { level: 9 });

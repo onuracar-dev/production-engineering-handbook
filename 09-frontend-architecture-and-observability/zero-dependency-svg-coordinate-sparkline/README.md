@@ -79,13 +79,13 @@ node test/measure_size.js
 --- Zero-Dependency SVG Sparkline Size Measurement ---
 File: src/TrendChart.tsx
 Lines: 13 lines
-Raw Size: 1345 bytes (1.31 KB)
-Gzip Size (level 9): 764 bytes (0.75 KB)
+Raw Size: 1332 bytes (1.30 KB)
+Gzip Size (level 9): 759 bytes (0.74 KB)
 ```
 
-_Note: Measures the source file, not a compiled/minified bundle._
+_Note: Measures the source file, not a compiled/minified bundle. Line endings are normalized to LF before measuring, so a CRLF checkout gives the same numbers._
 
-* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-17 (no external dependencies, native `node:zlib`)
+* **Test Environment:** Node.js v24.17.0, Windows 11 (CRLF checkout, core.autocrlf=true), 2026-10-19 (no external dependencies, native `node:zlib`)
 
 ---
 

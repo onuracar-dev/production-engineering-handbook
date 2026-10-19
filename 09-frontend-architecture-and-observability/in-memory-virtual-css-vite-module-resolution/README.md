@@ -24,7 +24,7 @@ Compiling Single File Components containing `<style scoped>` blocks requires ext
 1. **In-Memory Buffer Cache:** Holds compiled, scoped CSS strings in a process-level `Map<string, string>()` keyed by the component's unique file ID.
 2. **Rollup Virtual Module Convention (`\0`):** `resolveId()` prefixes virtual CSS identifiers with a null byte (`\0${id}`). This tells Rollup and Vite that the module is a virtual asset not present on the physical disk.
 3. **Seamless Vite Pipeline Forwarding:** In `transform()`, appending `import "${id}.css";` instructs Vite to process the virtual module through its native CSS pipeline (PostCSS, CSS modules, autoprefixer, minifier) entirely in RAM.
-4. **HMR Coordination:** Sends full-reload WebSocket signals directly to `server.ws` when `.flow` components change.
+4. **HMR Coordination (original project, not in `src/`):** Sends full-reload WebSocket signals directly to `server.ws` when `.flow` components change.
 
 ```typescript
 // 1. In-memory virtual CSS storage avoiding temporary disk file writes
@@ -43,7 +43,8 @@ return {
   // 3. Load virtual CSS directly from memory
   load(id) {
     if (id.startsWith('\0') && id.endsWith('.flow.css')) {
-      const actualId = id.slice(1).replace('.css', '');
+      // Strip the leading \0 and the trailing ".css" only; replace('.css') would hit the first match in the path
+      const actualId = id.slice(1, -'.css'.length);
       return cssMap.get(actualId) || '';
     }
     return null;

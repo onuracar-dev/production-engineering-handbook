@@ -1,3 +1,5 @@
+// Excerpt: the body of the original project's Vite plugin factory (compileSource comes from its compiler).
+
 // 1. In-memory virtual CSS storage avoiding temporary disk file writes
 const cssMap = new Map<string, string>();
 
@@ -14,7 +16,8 @@ return {
   // 3. Load virtual CSS directly from memory
   load(id) {
     if (id.startsWith('\0') && id.endsWith('.flow.css')) {
-      const actualId = id.slice(1).replace('.css', '');
+      // Strip the leading \0 and the trailing ".css" only; replace('.css') would hit the first match in the path
+      const actualId = id.slice(1, -'.css'.length);
       return cssMap.get(actualId) || '';
     }
     return null;

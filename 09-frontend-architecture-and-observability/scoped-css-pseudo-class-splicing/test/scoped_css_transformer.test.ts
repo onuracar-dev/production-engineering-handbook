@@ -58,3 +58,29 @@ test('preserves :root and :global(...) selectors without scope injection', () =>
   assert.match(output, /:global\(\.modal-overlay\) \{/);
   assert.doesNotMatch(output, /:root\[data-fluxdom=/);
 });
+
+test('keyframe step lists, escaped colons and quoted colons are not mangled', () => {
+  const scope = '[data-fluxdom="h"]';
+  const output = transformStyle(`
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      from, to { opacity: 0.5; }
+    }
+  `, 'h');
+  assert.match(output, /0%, 100% \{/);
+  assert.match(output, /from, to \{/);
+  assert.doesNotMatch(output, /data-fluxdom/);
+
+  const escaped = String.raw`.sm\:flex`; // Tailwind-style escaped colon
+  assert.equal(scopeSelector(escaped, scope), `${escaped}${scope}`);
+  assert.equal(scopeSelector(`${escaped}:hover`, scope), `${escaped}${scope}:hover`);
+  assert.equal(scopeSelector('a[href^="mailto:x"]', scope), `a[href^="mailto:x"]${scope}`);
+  assert.equal(scopeSelector('a[href^="mailto:x"]:hover', scope), `a[href^="mailto:x"]${scope}:hover`);
+});
+
+test('commas inside :not() do not split the selector list', () => {
+  assert.equal(
+    transformStyle('a:not(.x, .y), p { margin: 0; }', 'h').trim(),
+    'a[data-fluxdom="h"]:not(.x, .y), p[data-fluxdom="h"] { margin: 0; }'
+  );
+});
