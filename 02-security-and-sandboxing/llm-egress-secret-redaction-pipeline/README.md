@@ -22,8 +22,8 @@ When integrating third-party LLM providers (such as OpenAI, Gemini, or OpenRoute
 ## 3. Architecture
 
 1. **Null-Byte Scrubbing & Length Clamping:** `String(value).replace(/\0/g, '').slice(0, maxLength)` neutralizes null-byte bypasses and bounds prompt memory before regex execution.
-2. **6 Frozen Pattern Filters:** Matches:
-   * Private keys (`-----BEGIN RSA PRIVATE KEY-----`) -> `[redacted-private-key]`
+2. **Frozen Pattern Filters:** Matches:
+   * Private keys of any PEM flavour (`RSA`, `EC`, `DSA`, `OPENSSH`, `ENCRYPTED`, plain PKCS#8), including a key cut off by the length clamp -> `[redacted-private-key]`
    * JWT tokens (`eyJ...`) -> `[redacted-jwt]`
    * Database connection strings (`postgres://user:pass@host`) -> `postgres://[redacted]@host`
    * API tokens (Stripe `sk_live_`, OpenRouter `sk-or-v1-`, AWS `AKIA...`, Google `AIza...`) -> `[redacted-secret]`
@@ -33,12 +33,17 @@ When integrating third-party LLM providers (such as OpenAI, Gemini, or OpenRoute
 ```javascript
 // 1. Frozen cryptographic and credential token matching patterns
 const SECRET_PATTERNS = Object.freeze([
-    [/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/gi, '[redacted-private-key]'],
+    [/-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9]+ )*PRIVATE KEY-----/gi, '[redacted-private-key]'],
+    // A key cut by the length clamp has no END line: redact it through the end of the text.
+    [/-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----[\s\S]*$/gi, '[redacted-private-key]'],
     [/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer [redacted]'],
     [/\bsk-or-v1-[A-Za-z0-9_-]{16,}\b/gi, '[redacted-secret]'],
     [/\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{8,}\b/gi, '[redacted-secret]'],
+    [/\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g, '[redacted-secret]'],
+    [/\bAIza[0-9A-Za-z_-]{35}\b/g, '[redacted-secret]'],
     [/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, '[redacted-jwt]'],
-    [/(\b(?:https?|postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis):\/\/)[^\s/@:]+(?::[^\s/@]*)?@/gi, '$1[redacted]@']
+    [/(\b(?:https?|postgres(?:ql)?|mysql|mongodb(?:\+srv)?|rediss?|amqps?):\/\/)[^\s/@:]+(?::[^\s/]*)?@/gi, '$1[redacted]@'],
+    [/(\bexport\s+[A-Za-z0-9_]*(?:SECRET|TOKEN|PASSWORD|PASSWD|API_?KEY|PRIVATE_?KEY|CREDENTIALS?)[A-Za-z0-9_]*=)\S+/gi, '$1[redacted-environment-variable]']
 ]);
 
 // 2. Multi-stage sanitization pipeline stripping null-bytes and clamping length
@@ -57,7 +62,7 @@ function redactText(value, { maxLength = 4_000 } = {}) {
 |---|---|---|---|
 | Unfiltered Payloads | Critical (Full Leaks) | None (Exposes Passwords) | Vulnerable |
 | Keyword Masking | High (Misses Ephemeral Keys) | Incomplete | Vulnerable |
-| **6-Pattern Frozen Sanitizer** | **Redacted (`[redacted-secret]`)** | **Redacted (`[redacted]@`)** | **Null-bytes stripped and length clamped** |
+| **Frozen Pattern Sanitizer** | **Redacted (`[redacted-secret]`)** | **Redacted (`[redacted]@`)** | **Null-bytes stripped and length clamped** |
 
 _Qualitative comparison. Numbers appear only where a script in this folder measures them._
 
@@ -79,15 +84,17 @@ node --test test/secret_redaction.test.js
 
 ### Verified Output:
 ```text
-✔ redacts all 6 secret patterns reliably in arbitrary text (1.22ms)
-✔ pipeline strips null-bytes and clamps text to maxLength (0.17ms)
-ℹ tests 2
+✔ redacts all 6 secret patterns reliably in arbitrary text (0.97ms)
+✔ pipeline strips null-bytes and clamps text to maxLength (0.54ms)
+✔ redacts a private key cut off by the length clamp (0.15ms)
+✔ redacts the key formats the README lists (0.10ms)
+ℹ tests 4
 ℹ suites 0
-ℹ pass 2
+ℹ pass 4
 ℹ fail 0
 ```
 
-* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-17 (no external dependencies, built-in node:test)*
+* **Test Environment:** Node.js v24.22.0, Ubuntu 24.04, 2026-10-19 (no external dependencies, built-in node:test)
 
 ---
 

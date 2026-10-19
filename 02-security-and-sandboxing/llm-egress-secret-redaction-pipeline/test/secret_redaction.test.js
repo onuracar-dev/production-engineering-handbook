@@ -70,3 +70,25 @@ test('pipeline strips null-bytes and clamps text to maxLength', () => {
     const clamped = redactText(longInput, { maxLength: 100 });
     assert.equal(clamped.length, 100);
 });
+
+test('redacts a private key cut off by the length clamp', () => {
+    const key = '-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0m4wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n-----END RSA PRIVATE KEY-----';
+    const text = 'x'.repeat(3_950) + ' ' + key;
+    const out = redactText(text);
+    assert.equal(out.includes('MIIEow'), false);
+    assert.ok(out.endsWith('[redacted-private-key]'));
+});
+
+test('redacts the key formats the README lists', () => {
+    assert.equal(redactText('aws AKIAIOSFODNN7EXAMPLE end'), 'aws [redacted-secret] end');
+    assert.equal(redactText('gcp AIzaSyA1234567890abcdefghijklmnopqrstuv end'), 'gcp [redacted-secret] end');
+    assert.equal(redactText('export DB_PASSWORD=hunter2hunter2'), 'export DB_PASSWORD=[redacted-environment-variable]');
+    assert.equal(redactText('export PATH=/usr/bin'), 'export PATH=/usr/bin');
+    assert.equal(
+        redactText('-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIIFHz\n-----END ENCRYPTED PRIVATE KEY-----'),
+        '[redacted-private-key]'
+    );
+    assert.equal(redactText('postgres://admin:p@ssw0rd@db:5432/x'), 'postgres://[redacted]@db:5432/x');
+    assert.equal(redactText('amqp://user:pass@rabbit:5672'), 'amqp://[redacted]@rabbit:5672');
+    assert.equal(redactText('see https://example.com/a?mail=x@y.com'), 'see https://example.com/a?mail=x@y.com');
+});
