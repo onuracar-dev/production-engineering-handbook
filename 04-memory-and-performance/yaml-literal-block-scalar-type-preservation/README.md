@@ -28,7 +28,7 @@
 
 ## 4. Behavior Comparison
 
-| YAML Deserialization Strategy | Literal Block Scalar (`Value: |-\n true`) | Plain Scalar (`Value: true`) | Spec Conformance |
+| YAML Deserialization Strategy | Literal Block Scalar (`Value: \|-\n true`) | Plain Scalar (`Value: true`) | Spec Conformance |
 |---|---|---|---|
 | Incomplete Whitelist | Coerced to `Boolean(true)` | `Boolean(true)` | Violates YAML 1.2 |
 | Disable Type Inference | `String("true")` | Coerced to `String` (Lost Types) | Partial |
