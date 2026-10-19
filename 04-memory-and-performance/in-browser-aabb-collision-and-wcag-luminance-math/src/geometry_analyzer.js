@@ -1,4 +1,7 @@
-// 1. Calculate W3C relative luminance bubbling through transparent parent nodes
+// Excerpt from the original analyzer's page.evaluate() body (positioned, overlapPairs and elementEvidence come from there).
+
+// 1. Calculate W3C relative luminance of a computed CSS color
+// (the walk up through transparent parents is in the original analyzer, not in this excerpt)
 const rgb = (v) => (v.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
 const lum = (v) => {
     const c = rgb(v).map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; });

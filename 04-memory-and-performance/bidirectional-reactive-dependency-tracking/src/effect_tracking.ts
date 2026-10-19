@@ -5,6 +5,19 @@ export interface ReactiveEffect {
   running: boolean;
 }
 
+type EffectCleanup = () => void;
+type EffectFn = () => void | EffectCleanup;
+
+const effectStack: ReactiveEffect[] = [];
+let activeEffect: ReactiveEffect | null = null;
+
+// Signals call track() with their subscriber set when read inside an effect.
+export function track(subscribers: Set<ReactiveEffect>): void {
+  if (!activeEffect) return;
+  subscribers.add(activeEffect);
+  activeEffect.deps.add(subscribers);
+}
+
 export function effect(fn: EffectFn): EffectCleanup {
   let userCleanup: EffectCleanup | undefined;
 
@@ -42,5 +55,18 @@ export function effect(fn: EffectFn): EffectCleanup {
   runner.active = true;
   runner.running = false;
   runner();
-  return () => { runner.active = false; };
+
+  // 3. Disposal unlinks the runner from every subscriber set and runs the last cleanup
+  return () => {
+    if (!runner.active) return;
+    runner.active = false;
+    for (const dependency of runner.deps) {
+      dependency.delete(runner);
+    }
+    runner.deps.clear();
+    if (userCleanup) {
+      userCleanup();
+      userCleanup = undefined;
+    }
+  };
 }

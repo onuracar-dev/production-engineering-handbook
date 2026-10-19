@@ -3,7 +3,7 @@
 > **Domain:** Memory & Performance  
 > **Source Project:** `WebPageAnalyz (Advanced Browser Analyzer)`  
 > **Language:** JavaScript / In-Page Evaluation  
-> **Key Metric:** `AABB 2D area intersection (>400px excluding ancestry), W3C relative luminance bubbling through transparent DOM parents`
+> **Key Metric:** `AABB 2D area intersection (>400px excluding ancestry), W3C relative luminance of computed colors`
 
 ---
 
@@ -26,7 +26,7 @@ Auditing responsive web pages for visual interface bugs—such as overlapping mo
 
 ## 3. Architecture
 
-1. **Recursive Parent Luminance Bubbling:** If an element has transparent background, the analyzer traverses up the DOM tree until it resolves a non-transparent ancestor, applying the W3C relative luminance formula:
+1. **Relative Luminance:** `lum()` applies the W3C relative luminance formula to a computed CSS color. In the original analyzer, an element with a transparent background is resolved by walking up to the first non-transparent ancestor; that walk is not part of `src/`:
    `L = 0.2126 * R + 0.7152 * G + 0.0722 * B` (with sRGB gamma expansion).
 2. **Axis-Aligned Bounding Box (AABB) 2D Intersection:** Evaluates 2D rectangle overlaps across `fixed`, `sticky`, and `absolute` elements in Chrome memory.
 3. **Ancestry Exclusion Invariant:** Checks `!a.contains(b) && !b.contains(a)` to ensure parent containers housing child elements are never falsely flagged as collisions.

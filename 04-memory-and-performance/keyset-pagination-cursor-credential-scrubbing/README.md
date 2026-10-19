@@ -23,9 +23,9 @@ In customer support and ticketing backends, two problems frequently occur:
 
 ## 3. Architecture
 
-1. **Base64url Encoded Keyset Cursors:** Serializes deterministic state tuples (`{ at, id }`) into compact Base64url tokens. `decodeCursor()` bounds token length to 512 bytes, verifies JSON structure, and asserts finite ISO timestamp parsing.
+1. **Base64url Encoded Keyset Cursors:** Serializes deterministic state tuples (`{ at, id }`) into compact Base64url tokens. `decodeCursor()` bounds token length to 512 bytes, verifies JSON structure, and asserts finite ISO timestamp parsing. Every malformed cursor (bad base64url, bad JSON, missing id or timestamp) becomes HTTP 400 `SUPPORT_CURSOR_INVALID`; id `0` is accepted.
 2. **Index Seek (O(log n)) Instead of Offset Scan:** Uses indexed compound filters (`WHERE (created_at, id) < ($1, $2)`), executing an index seek instead of scanning and discarding preceding rows with OFFSET regardless of table depth.
-3. **URL Protocol & Credential Sanitization:** Parses input via native `URL`. Strictly rejects non-HTTP(S) schemes and asserts `!parsed.username && !parsed.password`. Authenticated URLs with embedded credentials are discarded rather than persisted.
+3. **URL Protocol & Credential Sanitization:** Parses input via native `URL`. Strictly rejects non-HTTP(S) schemes and asserts `!parsed.username && !parsed.password`. URLs with `user:pass@` credentials are discarded rather than persisted. Credentials in query parameters (`?token=`) are not handled here.
 
 ```javascript
 // 1. Keyset pagination cursor encoding and strict decoding
@@ -38,18 +38,31 @@ function decodeCursor(value) {
     if (typeof value !== 'string' || value.length > 512) {
         throw new AppError('The support pagination cursor is invalid.', { status: 400, code: 'SUPPORT_CURSOR_INVALID' });
     }
-    const decoded = JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
-    if (!decoded?.id || !Number.isFinite(Date.parse(decoded.at))) throw new Error('invalid');
+    let decoded;
+    try {
+        decoded = JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+    } catch {
+        decoded = null;
+    }
+    // id 0 is a valid key; only a missing id, a non-scalar id or a bad timestamp is rejected
+    const validId = (typeof decoded?.id === 'number' && Number.isFinite(decoded.id)) || (typeof decoded?.id === 'string' && decoded.id !== '');
+    if (!validId || !Number.isFinite(Date.parse(decoded.at))) {
+        throw new AppError('The support pagination cursor is invalid.', { status: 400, code: 'SUPPORT_CURSOR_INVALID' });
+    }
     return { at: new Date(decoded.at).toISOString(), id: decoded.id };
 }
 
 // 2. Structured message context extraction scrubbing embedded credentials from URLs
-try {
-    const parsed = fields.targeturl ? new URL(fields.targeturl) : null;
-    if (parsed && ['http:', 'https:'].includes(parsed.protocol) && !parsed.username && !parsed.password) {
-        targetUrl = parsed.toString();
-    }
-} catch { /* malformed context is ignored */ }
+function extractTargetUrl(fields) {
+    let targetUrl = null;
+    try {
+        const parsed = fields.targeturl ? new URL(fields.targeturl) : null;
+        if (parsed && ['http:', 'https:'].includes(parsed.protocol) && !parsed.username && !parsed.password) {
+            targetUrl = parsed.toString();
+        }
+    } catch { /* malformed context is ignored */ }
+    return targetUrl;
+}
 ```
 
 ---
@@ -60,7 +73,7 @@ try {
 |---|---|---|---|
 | Offset Pagination (`OFFSET 5000`) | Degrades with page depth (Scans preceding rows) | Vulnerable (Skips/Duplicates) | None (Stores Plaintext) |
 | ID-Only Cursor | Index seek | Breaks on equal timestamps | None |
-| **Base64url Keyset `(at, id)`** | **B-tree index seek (O(log n))** | **Stable against concurrent row shifts** | **Query credentials stripped from URLs** |
+| **Base64url Keyset `(at, id)`** | **B-tree index seek (O(log n))** | **Stable against concurrent row shifts** | **`user:pass@` URLs discarded** |
 
 _Qualitative comparison. Numbers appear only where a script in this folder measures them._
 
@@ -72,6 +85,29 @@ See implementation in [`src/support_keyset_cursor.js`](./src/support_keyset_curs
 
 ---
 
-## 6. Visual Representation
+## 6. How to Verify
+
+Run the automated test suite using Node.js built-in test runner:
+
+```bash
+node --test test/support_keyset_cursor.test.js
+```
+
+### Verified Output:
+```text
+✔ round-trips a cursor, including id 0 (3.5725ms)
+✔ every malformed cursor is a 400, not a 500 (0.6733ms)
+✔ URLs with userinfo credentials are discarded (0.2677ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+```
+
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-19 (no external dependencies, built-in node:test)
+
+---
+
+## 7. Visual Representation
 
 ![Visual Architecture Card](./assets/code-card.png)

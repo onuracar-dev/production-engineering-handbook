@@ -22,7 +22,7 @@
 
 1. **Bidirectional Dependency Tracking (`deps: Set<Set<ReactiveEffect>>`):** The effect holds a reference to every signal's subscriber set. Prior to each run, it deletes itself from every tracked dependency set and clears its internal list.
 2. **Per-Runner Recursion Guard (`runner.running = true`):** Restricts recursion protection strictly to the active runner instance, avoiding global reactive pipeline freezes while preventing infinite self-invocation.
-3. **Clean Teardown Guarantees:** Returns from effect functions are captured as `userCleanup` and executed before subsequent runs and upon unmount.
+3. **Clean Teardown Guarantees:** Returns from effect functions are captured as `userCleanup` and executed before subsequent runs. The disposer returned by `effect()` removes the runner from every subscriber set and runs the last cleanup, so a disposed effect leaves no subscription behind.
 
 ---
 
@@ -44,6 +44,28 @@ See implementation in [`src/effect_tracking.ts`](./src/effect_tracking.ts).
 
 ---
 
-## 6. Visual Representation
+## 6. How to Verify
+
+Run the automated test suite using Node.js built-in test runner:
+
+```bash
+node --experimental-strip-types --test test/effect_tracking.test.ts
+```
+
+### Verified Output:
+```text
+✔ a branch switch drops the stale subscription (1.8664ms)
+✔ disposing unlinks every subscriber set and runs the cleanup (0.3314ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+```
+
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-19 (no external dependencies, built-in node:test)
+
+---
+
+## 7. Visual Representation
 
 ![Visual Architecture Card](./assets/code-card.png)
