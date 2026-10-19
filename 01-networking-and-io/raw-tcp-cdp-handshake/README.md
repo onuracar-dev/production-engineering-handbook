@@ -40,7 +40,7 @@ We eliminated external HTTP dependencies entirely by implementing a handcrafted 
    Host: 127.0.0.1:9222\r\n
    Connection: close\r\n\r\n
    ```
-3. **Active Framing & Early Exit:** Rather than waiting for the remote socket to close or timeout, the buffer is inspected in-flight for the `\r\n\r\n` header delimiter and the `Content-Length` header. As soon as the byte count of the body meets or exceeds `Content-Length`, execution returns immediately.
+3. **Active Framing & Early Exit:** Rather than waiting for the remote socket to close or timeout, the buffer is inspected in-flight for the `\r\n\r\n` header delimiter and the `Content-Length` header. As soon as the byte count of the body meets or exceeds `Content-Length`, execution returns immediately. Without `Content-Length` the body runs until the peer closes the socket (the request sends `Connection: close`). A short read, a read error or a response above 4 MiB returns `Err` instead of a truncated body.
 
 ---
 
@@ -62,24 +62,32 @@ See implementation in [`src/main.rs`](./src/main.rs).
 
 ```rust
 // Handcrafted HTTP/1.1 frame without external HTTP dependencies
-let req = format!("GET /json HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n", addr_str);
-stream.write_all(req.as_bytes())?;
+let req = format!(
+    "GET /json HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
+    addr_str
+);
+stream.write_all(req.as_bytes()).map_err(|e| e.to_string())?;
 
-// Immediate exit on Content-Length match without waiting for socket close
-if let Some(pos) = resp_str.find("\r\n\r\n") {
-    if let Some(cl_idx) = resp_str[..pos].to_lowercase().find("content-length:") {
-        if let Ok(expected_len) = parse_len(&resp_str[..pos], cl_idx) {
-            if response[pos + 4..].len() >= expected_len {
-                return Ok((resp_str[pos + 4..pos + 4 + expected_len].to_string(), start_time.elapsed()));
-            }
-        }
+// Read until Content-Length is satisfied or the peer closes (Connection: close).
+// A hard byte cap turns a runaway response into an error instead of a truncated body.
+loop {
+    if let Some(body) = complete_body(&response) {
+        return Ok((body, start_time.elapsed()));
+    }
+    if response.len() > MAX_RESPONSE_BYTES {
+        return Err(format!("CDP response exceeded {} bytes", MAX_RESPONSE_BYTES));
+    }
+    match stream.read(&mut buf) {
+        Ok(0) => break,
+        Ok(n) => response.extend_from_slice(&buf[..n]),
+        Err(e) => return Err(format!("CDP read failed: {}", e)),
     }
 }
 ```
 
 ---
 
-## 6. How to Verify
+## 6. How to Run
 
 1. Start Google Chrome with remote debugging enabled on port 9222:
    ```bash

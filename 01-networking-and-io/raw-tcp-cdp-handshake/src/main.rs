@@ -29,46 +29,56 @@ pub fn fetch_cdp_targets_raw(addr_str: &str, timeout_ms: u64) -> Result<(String,
     let mut response = Vec::with_capacity(8192);
     let mut buf = [0u8; 4096];
 
-    // Read loop with Content-Length framing detection to avoid socket EOF delay
-    for _ in 0..30 {
+    // Read until Content-Length is satisfied or the peer closes (Connection: close).
+    // A hard byte cap turns a runaway response into an error instead of a truncated body.
+    loop {
+        if let Some(body) = complete_body(&response) {
+            return Ok((body, start_time.elapsed()));
+        }
+        if response.len() > MAX_RESPONSE_BYTES {
+            return Err(format!("CDP response exceeded {} bytes", MAX_RESPONSE_BYTES));
+        }
         match stream.read(&mut buf) {
             Ok(0) => break,
-            Ok(n) => {
-                response.extend_from_slice(&buf[..n]);
-                let resp_str = String::from_utf8_lossy(&response);
-
-                if let Some(pos) = resp_str.find("\r\n\r\n") {
-                    let headers = &resp_str[..pos];
-                    let body = &resp_str[pos + 4..];
-
-                    // Early exit when the announced Content-Length is satisfied
-                    if let Some(cl_idx) = headers.to_lowercase().find("content-length:") {
-                        let after = &headers[cl_idx + 15..];
-                        if let Some(end_line) = after.find("\r\n") {
-                            if let Ok(expected_len) = after[..end_line].trim().parse::<usize>() {
-                                if body.as_bytes().len() >= expected_len {
-                                    let duration = start_time.elapsed();
-                                    return Ok((body[..expected_len].trim().to_string(), duration));
-                                }
-                            }
-                        }
-                    } else if body.trim().starts_with('[') && body.trim().ends_with(']') {
-                        let duration = start_time.elapsed();
-                        return Ok((body.trim().to_string(), duration));
-                    }
-                }
-            }
-            Err(_) => break,
+            Ok(n) => response.extend_from_slice(&buf[..n]),
+            Err(e) => return Err(format!("CDP read failed: {}", e)),
         }
     }
 
-    let resp_str = String::from_utf8_lossy(&response);
-    let duration = start_time.elapsed();
-    if let Some(pos) = resp_str.find("\r\n\r\n") {
-        Ok((resp_str[pos + 4..].trim().to_string(), duration))
-    } else {
-        Ok((resp_str.trim().to_string(), duration))
+    // EOF: without Content-Length the body runs to the end of the stream.
+    let pos = find_header_end(&response).ok_or("CDP response ended before headers")?;
+    if content_length(&response[..pos]).is_some() {
+        return Err("CDP response ended before Content-Length was satisfied".to_string());
     }
+    Ok((String::from_utf8_lossy(&response[pos + 4..]).trim().to_string(), start_time.elapsed()))
+}
+
+const MAX_RESPONSE_BYTES: usize = 4 * 1024 * 1024;
+
+fn find_header_end(response: &[u8]) -> Option<usize> {
+    response.windows(4).position(|w| w == b"\r\n\r\n")
+}
+
+fn content_length(headers: &[u8]) -> Option<usize> {
+    String::from_utf8_lossy(headers).lines().find_map(|line| {
+        let (name, value) = line.split_once(':')?;
+        if name.trim().eq_ignore_ascii_case("content-length") {
+            value.trim().parse().ok()
+        } else {
+            None
+        }
+    })
+}
+
+/// Returns the body once the announced Content-Length has fully arrived.
+fn complete_body(response: &[u8]) -> Option<String> {
+    let pos = find_header_end(response)?;
+    let expected_len = content_length(&response[..pos])?;
+    let body = &response[pos + 4..];
+    if body.len() < expected_len {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&body[..expected_len]).trim().to_string())
 }
 
 fn main() {

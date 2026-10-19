@@ -23,14 +23,14 @@ In modern web architectures combining Single Page Applications (React/Vite) with
 
 ## 3. Architecture
 
-1. **Explicit Buffering Disablement:** Enforces `proxy_buffering off;` on the `/api/` reverse proxy block, guaranteeing immediate TCP packet flushing for live SSE streams.
+1. **Explicit Buffering Disablement:** Enforces `proxy_buffering off;` on the `/api/` reverse proxy block, so SSE events are passed to the client as soon as nginx receives them. The block uses `location ^~ /api/`: nginx otherwise prefers the regex asset block below, and an API route such as `/api/badge.svg` would return 404 from disk.
 2. **Extended Audit Timeouts:** Configures `proxy_read_timeout 270s;` and `proxy_send_timeout 270s;` to accommodate long-running security audits without premature proxy disconnection.
 3. **Isolated Static Asset Block:** Dedicated location block for static extensions (`.(?:js|css|svg|png|webp|woff2?)$`) configured with `try_files $uri =404;`. If a hashed asset does not exist on disk, Nginx returns an explicit HTTP 404 rather than serving `index.html`, eliminating MIME-type confusion crashes.
 4. **Long-Term Asset Caching:** Configures `expires 1y;` on immutable static bundles for optimal browser cache performance.
 
 ```nginx
 # 1. Real-time Server-Sent Events (SSE) streaming proxy configuration
-location /api/ {
+location ^~ /api/ {
     proxy_pass http://backend:5000;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
