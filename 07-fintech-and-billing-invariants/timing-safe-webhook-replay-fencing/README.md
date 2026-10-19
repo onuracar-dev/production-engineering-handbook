@@ -3,7 +3,7 @@
 > **Domain:** Fintech & Billing Invariants  
 > **Source Project:** `WebPageAnalyz (Billing Gateway)`  
 > **Language:** Node.js / Timing-Safe Crypto  
-> **Key Metric:** `Constant-time verification, 5s replay fence, monotonic event ordering`
+> **Key Metric:** `Constant-time verification, 5s replay fence`
 
 ---
 
@@ -26,9 +26,9 @@ Webhooks from billing providers (Paddle, Stripe) are vulnerable to timing attack
 
 ## 3. Architecture
 
-1. **Constant-Time Verification:** Compares cryptographic signature buffers strictly using `crypto.timingSafeEqual()`, eliminating side-channel timing leaks.
-2. **5-Second Replay Fence:** Enforces `Math.abs(currentSeconds - timestamp) > 5` to reject any captured or delayed webhook outside an immediate 5-second window.
-3. **Monotonic Event Sequencing:** The billing engine records `occurred_at` timestamps and verifies that older events cannot regress newer subscription state.
+1. **Constant-Time Verification:** Compares cryptographic signature buffers strictly using `crypto.timingSafeEqual()`, eliminating side-channel timing leaks. Each `h1` value must be exactly 64 hex characters first, because `Buffer.from(sig, 'hex')` silently ignores trailing junk.
+2. **5-Second Replay Fence:** Enforces `Math.abs(currentSeconds - timestamp) > 5` to reject any captured or delayed webhook outside an immediate 5-second window. A non-numeric `ts` is rejected up front; otherwise `Math.abs(now - NaN) > 5` is `false` and the fence would pass.
+3. **Monotonic Event Sequencing (original project, not in `src/`):** The billing engine records `occurred_at` timestamps and verifies that older events cannot regress newer subscription state.
 
 ---
 
@@ -50,6 +50,30 @@ See implementation in [`src/webhook_verifier.js`](./src/webhook_verifier.js).
 
 ---
 
-## 6. Visual Representation
+## 6. How to Verify
+
+Run the automated test suite using Node.js built-in test runner:
+
+```bash
+node --test test/webhook_verifier.test.js
+```
+
+### Verified Output:
+```text
+✔ accepts a valid signature inside the window (1.5393ms)
+✔ rejects trailing junk after a valid hex digest (0.4489ms)
+✔ rejects a non-numeric or stale timestamp (0.3154ms)
+✔ rejects a wrong signature and a missing one (0.211ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+```
+
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-19 (no external dependencies, built-in node:test)
+
+---
+
+## 7. Visual Representation
 
 ![Visual Architecture Card](./assets/code-card.png)

@@ -28,7 +28,7 @@ Double-clicks on checkout buttons or multiple open browser tabs spawn duplicate 
 
 1. **Partial Unique Index Invariant:** `CREATE UNIQUE INDEX ... ON wpa_checkout_acceptances(workspace_id) WHERE status IN ('accepted', 'checkout_created')` ensures only one active checkout intent can exist per tenant at any time.
 2. **Setup Lease Fencing:** Provider checkout creation is guarded by a bounded lease (`setup_lease_owner`, `setup_lease_token`), serializing external API calls while permitting crash recovery after timeout.
-3. **Mandatory Audit Atomicity:** Every entitlement and plan mutation is executed within a database transaction where audit log insertion is non-optional. If `wpa_audit_log` fails, the entire mutation immediately issues `ROLLBACK`.
+3. **Mandatory Audit Atomicity:** Every entitlement and plan mutation is executed within a database transaction where audit log insertion is non-optional. If `wpa_audit_log` fails, the entire mutation immediately issues `ROLLBACK`. The update changes only the given module's key with `jsonb_set`, and an unknown `planId` (0 rows updated) also rolls back, so no audit row is written for a change that did not happen.
 
 ---
 
@@ -46,7 +46,7 @@ _Qualitative comparison. Numbers appear only where a script in this folder measu
 
 ## 5. Implementation
 
-See implementation in [`src/checkout_idempotency.sql`](./src/checkout_idempotency.sql).
+See implementation in [`src/checkout_idempotency.sql`](./src/checkout_idempotency.sql) (index and lease columns) and [`src/plan_entitlement_audit.js`](./src/plan_entitlement_audit.js) (audited entitlement change). The SQL was reviewed by reading only; it has not been run against PostgreSQL in this repo.
 
 ---
 
