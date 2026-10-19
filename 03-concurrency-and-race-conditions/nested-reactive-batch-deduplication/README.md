@@ -94,7 +94,7 @@ node --experimental-strip-types --test test/nested_batching.test.ts
 ℹ fail 0
 ```
 
-* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-17 (no external dependencies, native type stripping)*
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-17 (no external dependencies, native type stripping)
 
 ---
 

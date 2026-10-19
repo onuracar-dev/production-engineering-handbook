@@ -85,7 +85,7 @@ Gzip Size (level 9): 764 bytes (0.75 KB)
 
 _Note: Measures the source file, not a compiled/minified bundle._
 
-* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-17 (no external dependencies, native `node:zlib`)*
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-17 (no external dependencies, native `node:zlib`)
 
 ---
 

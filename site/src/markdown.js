@@ -96,7 +96,8 @@ export function md(src, base = BASE) {
       top = null;
     }
   };
-  const clean = (t) => t.replace(/\*$/, '').trim();
+  // Drop a stray trailing "*" (an unclosed emphasis), but not the closing "**" of a bold label.
+  const clean = (t) => t.replace(/(?<!\*)\*$/, '').trim();
 
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
