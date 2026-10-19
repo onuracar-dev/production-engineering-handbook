@@ -179,7 +179,7 @@ Click on any engineering challenge below to jump directly to the case study, arc
 <a id="socket-level-ssrf-dns-rebinding-defense"></a>
 * ### [👉 How to prevent SSRF and DNS Rebinding (TOCTOU) attacks at the socket transport layer without reverse proxy daemons?](./02-security-and-sandboxing/socket-level-ssrf-dns-rebinding-defense)
   * **The Challenge:** Pre-flight URL validation fails against DNS Rebinding: attackers flip public IPs to `127.0.0.1` mid-flight between check and connect. Decimal encodings (`http://2130706433`) and IPv6 mapping bypass standard regexes.
-  * **The Engineering Fix:** Subnet classification via `net.BlockList()`. Upstream `net.connect()` connects directly to the verified resolved IP address (`target.address`), passing hostname solely for TLS SNI (`servername`). Fail-closed HTTP `CONNECT` rejection.
+  * **The Engineering Fix:** Subnet classification via `net.BlockList()`. Upstream `net.connect()` connects directly to the verified resolved IP address (`target.address`), passing hostname solely for TLS SNI (`servername`). Byte quotas on CONNECT tunnels.
   * **Outcome:** Pins connections directly to validated IP addresses with subnet blocklists, eliminating DNS rebinding TOCTOU windows.
 
 <a id="zip-slip-symlink-decompression-bomb-guard"></a>
@@ -588,7 +588,7 @@ Have you solved a hard, non-trivial systems engineering problem? We welcome cont
 * **Domain-Driven Taxonomy:** Submissions must fit into one of the existing domain categories. Pull requests cannot add a new domain; propose one in an issue first.
 * **Strict Architecture Breakdown:** Every case study must include a comprehensive `README.md` following our uniform section specification.
 * **Runnable/Verifiable Code:** Every case must include isolated source code in `src/`.
-* **Standard Code Card:** Every case must include a 1000x750 raw VS Code editor crop in `assets/code-card.png`.
+* **Standard Code Card:** Every case must include a raw VS Code editor crop in `assets/code-card.png` (1000x750 for new cards; see CONTRIBUTING for the existing sizes).
 
 👉 **Read the complete submission guide, file templates, and review criteria in [`CONTRIBUTING.md`](./CONTRIBUTING.md).**
 
@@ -597,7 +597,7 @@ Have you solved a hard, non-trivial systems engineering problem? We welcome cont
 ## 🛠 Directory Layout Standard
 
 Every case study directory follows this strict layout:
-* `README.md` — Sections in this order: *Problem*, *Why Naive Approaches Fail*, *Architecture*, *Behavior Comparison*, *Implementation*, optional *How to Verify*, *Visual Representation*. The site build reads these headings, so keep them exact.
+* `README.md` — Sections in this order: *Problem*, *Why Naive Approaches Fail*, *Architecture*, *Behavior Comparison*, *Implementation*, optional *How to Verify* (or *How to Run* / *Derivation* when there is no `test/`), *Visual Representation*. The site build reads these headings, so keep them exact.
 * `src/` — Self-contained source code linked from *Implementation*.
-* `test/` (optional) — A runnable check whose real output is pasted into *How to Verify*.
+* `test/` (optional) — A runnable check whose real output is pasted into *How to Verify*. The site stamps a case "Verified" only when this folder exists.
 * `assets/code-card.png` — Raw VS Code editor crop of the key code.

@@ -19,7 +19,7 @@ pub fn fetch_cdp_targets_raw(addr_str: &str, timeout_ms: u64) -> Result<(String,
         .set_read_timeout(Some(Duration::from_millis(timeout_ms)))
         .map_err(|e| e.to_string())?;
 
-    // Handcrafted HTTP/1.1 request (zero allocations beyond the payload)
+    // Handcrafted HTTP/1.1 frame without external HTTP dependencies
     let req = format!(
         "GET /json HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
         addr_str

@@ -117,7 +117,17 @@ for (const b of books) {
     const arch = s['Architecture'] || '';
     if (!arch) throw new Error(`Missing Architecture section in ${c.slug}`);
 
-    const verify = s['How to Verify'] || '';
+    // "Verified" means a test/ folder backs the section. Cases without one use
+    // "How to Run" or "Derivation" instead, which the site shows without the stamp.
+    const verified = fs.existsSync(path.join(caseDir, 'test'));
+    if (s['How to Verify'] && !verified) {
+      throw new Error(`"How to Verify" in ${c.slug} needs a test/ folder; rename it to "How to Run" or "Derivation"`);
+    }
+    if (verified && !s['How to Verify']) {
+      throw new Error(`${c.slug} has a test/ folder but no "How to Verify" section`);
+    }
+    const verifyLabel = ['How to Verify', 'How to Run', 'Derivation'].find((k) => s[k]) || '';
+    const verify = verifyLabel ? s[verifyLabel] : '';
     const srcMatch = (s['Implementation'] || '').match(/\(\.\/(src\/[^)]+)\)/);
     const src = srcMatch ? srcMatch[1] : '';
     if (!src) throw new Error(`Missing Implementation src link in ${c.slug}`);
@@ -135,6 +145,8 @@ for (const b of books) {
       naive,
       arch,
       verify,
+      verified,
+      verifyLabel,
       src,
     });
   }

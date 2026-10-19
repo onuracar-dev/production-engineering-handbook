@@ -94,8 +94,12 @@ export function useBook({ books, setCurBook }) {
   const caseRight = (b, c, i, idx) => {
     const base = caseBase(b, c);
     const blob = base.replace('/tree/', '/blob/');
+    // Only cases with a test/ folder get the stamp; "How to Run" / "Derivation" show a plain label
+    const label = c.verified
+      ? '<span class="stamp">Verified</span>'
+      : `<span class="stamp plain">${esc(c.verifyLabel || 'How to Run')}</span>`;
     const verify = c.verify
-      ? `<section class="verify"><span class="stamp">Verified</span><div class="md">${md(c.verify, base)}</div></section>`
+      ? `<section class="verify">${label}<div class="md">${md(c.verify, base)}</div></section>`
       : '';
     const src = c.src
       ? `<a href="${blob + c.src}" target="_blank" rel="noopener">${esc(c.src)} &nearr;</a>`

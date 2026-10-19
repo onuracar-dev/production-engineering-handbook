@@ -184,6 +184,7 @@ pre.code code { background: none; padding: 0; font-size: 1em; }
   padding: .3em .65em; background: var(--paper); border: 2px solid var(--stamp); border-radius: 3px;
   color: var(--stamp); font: 600 .66em/1 "JetBrains Mono", monospace; letter-spacing: .16em; text-transform: uppercase;
 }
+.stamp.plain { transform: none; border: 1px solid var(--ink-faint); color: var(--pencil); }
 .srcs { margin: 1.4em 0 0; font-size: .86em; display: flex; flex-wrap: wrap; gap: .4em 1.2em; }
 .srcs a { color: var(--red); text-underline-offset: 3px; }
 

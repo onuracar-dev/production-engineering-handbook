@@ -44,7 +44,7 @@ See implementation in [`src/biquad_slew_equalizer.rs`](./src/biquad_slew_equaliz
 
 ---
 
-## 6. How to Verify (Formula Derivation)
+## 6. Derivation
 
 The decimation and update rates are derived directly from the standard audio PCM sampling rate and processing buffer geometry:
 

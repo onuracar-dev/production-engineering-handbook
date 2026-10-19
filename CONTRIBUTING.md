@@ -34,7 +34,7 @@ Every new case study must live inside one of the existing domain directories and
 ├── src/                # Self-contained runnable or verifiable source code
 │   └── <source-file>   # e.g., buffer_swap.rs, jwt_engine.ts, route_compiler.ts
 └── assets/
-    └── code-card.png   # 1000x750 authentic VS Code editor crop
+    └── code-card.png   # authentic VS Code editor crop (1000x750 preferred)
 ```
 
 ### Domain Directory Categories
@@ -80,7 +80,7 @@ Link directly to the runnable source code in `src/`:
 See implementation in [`src/<file-name>`](./src/<file-name>).
 
 ## 6. How to Verify (optional)
-The command that runs your check in `test/`, its real output, and the environment (OS, runtime version, date).
+The command that runs your check in `test/`, its real output, and the environment (OS, runtime version, date). Use this heading only when the case has a `test/` folder; the site stamps it "Verified". Without `test/`, call the section `How to Run` (manual steps) or `Derivation` (a worked formula) instead.
 
 ## 7. Visual Representation
 ![Visual Architecture Card](./assets/code-card.png)
@@ -91,7 +91,7 @@ The command that runs your check in `test/`, its real output, and the environmen
 ## 🎨 4. Code Card Visual Standard (`code-card.png`)
 
 Every case study must include a visual code snapshot in `assets/code-card.png`:
-* **Resolution:** 1000 x 750 pixels.
+* **Resolution:** 1000 x 750 pixels for new cards. Existing cards also use 1040 x 640 (19 cards) and 1840 x 1240 / 1840 x 1280 (6 cards); those sizes are accepted and the cards are not being regenerated. Whatever the size, the code must stay readable at the width the site shows it.
 * **Style:** Authentic, raw VS Code editor crop (NO macOS window drop shadows or traffic lights).
 * **Font:** Consolas, Menlo, or JetBrains Mono (12.5px font size, 1.48 line-height).
 * **Palette:** GitHub Dark (`#0d1117` background, `#161b22` editor surface, `#30363d` border).

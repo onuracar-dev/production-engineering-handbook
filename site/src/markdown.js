@@ -42,7 +42,10 @@ export function href(h, base = BASE) {
 
 export function inline(s, base = BASE) {
   const codes = [];
-  s = s.replace(/`([^`]+)`/g, (_, c) => {
+  // CommonMark code spans: an opening run of N backticks closes at the next run of exactly N,
+  // and one space on both ends is stripped, so `` ` `` renders a lone backtick.
+  s = s.replace(/(?<!`)(`+)(?!`)([\s\S]*?[^`])\1(?!`)/g, (_, _ticks, c) => {
+    if (c.length > 2 && c.startsWith(' ') && c.endsWith(' ') && c.trim()) c = c.slice(1, -1);
     codes.push(c);
     return `\u0000${codes.length - 1}\u0000`;
   });

@@ -20,7 +20,7 @@ npm run dev
 Nothing in `site/` duplicates the handbook. `scripts/build-data.mjs` runs before `dev` and `build`:
 
 1. It reads the **Quick Problem Index** in the root `README.md` to get the books, their order, and the question for each case.
-2. For every case it parses `<domain>/<case>/README.md` by heading: *Problem*, *Why Naive Approaches Fail*, *Architecture*, *Implementation* and the optional *How to Verify*.
+2. For every case it parses `<domain>/<case>/README.md` by heading: *Problem*, *Why Naive Approaches Fail*, *Architecture*, *Implementation* and the optional *How to Verify*, *How to Run* or *Derivation*. Only a case with a `test/` folder gets the "Verified" stamp; *How to Verify* without `test/` (or `test/` without *How to Verify*) fails the build.
 3. It writes `public/data/index.json` (shelf and contents) and one `public/data/book-<n>.json` per book (loaded when the book is opened). Both are generated and git-ignored.
 
 The build fails instead of publishing a broken page when:
