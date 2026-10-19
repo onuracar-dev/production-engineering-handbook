@@ -22,7 +22,7 @@
 
 1. **Non-Blocking Mutex Acquisition (`try_lock()`):** The audio thread attempts acquisition via `self.analyzer.try_lock()`. If the visualizer thread holds the lock, the audio thread drops the frame without waiting and continues rendering audio uninterrupted.
 2. **Zero-Copy Vector Swap (`std::mem::swap`):** Swapping buffer pointers via `std::mem::swap(&mut *target, &mut self.analysis_buffer)` transfers ownership in constant O(1) time without heap allocations.
-3. **Decoupled Atomic Flag (`AtomicBool`):** An atomic flag (`analysis_enabled`) checks whether visualizers are visible; if hidden, audio sample accumulation is disabled without locking.
+3. **Analysis Flag:** `self.analysis_active` gates accumulation; when no visualizer is visible, the audio thread skips it without touching the lock. In this excerpt it is a plain field on the audio iterator; how the UI side updates it is not part of `src/`.
 
 ---
 

@@ -52,3 +52,19 @@ test('mutated payload produces different fingerprint and triggers 409 replay rej
         }
     );
 });
+
+test('Date values change the fingerprint; Map and Set are rejected', () => {
+    const a = operationFingerprint({ at: new Date('2026-01-01T00:00:00Z') });
+    const b = operationFingerprint({ at: new Date('2026-06-01T00:00:00Z') });
+    assert.notEqual(a, b);
+    assert.equal(a, operationFingerprint({ at: '2026-01-01T00:00:00.000Z' }));
+    assert.throws(() => operationFingerprint({ m: new Map([['k', 1]]) }), TypeError);
+    assert.throws(() => operationFingerprint({ s: new Set([1]) }), TypeError);
+});
+
+test('a stored key replayed without a fingerprint fails closed', () => {
+    const stored = operationFingerprint({ amount: 1 });
+    assert.throws(() => assertIdempotentReplay(stored, undefined), (err) => err.code === 'IDEMPOTENCY_KEY_REUSED');
+    // First use: nothing stored yet
+    assert.doesNotThrow(() => assertIdempotentReplay(undefined, stored));
+});

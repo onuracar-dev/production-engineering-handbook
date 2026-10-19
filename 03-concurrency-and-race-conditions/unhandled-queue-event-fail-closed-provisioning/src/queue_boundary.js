@@ -1,3 +1,6 @@
+// Excerpt from the original project's queue class: the first block runs in its constructor and
+// ensureQueue() is one of its methods. This file does not run on its own.
+
 // 1. Explicit EventEmitter error listener preventing uncaughtException on DB restart
 this.boss = new BossClass({ ...connection, schema: 'wpa_queue', migrate: false });
 this.boss.on?.('error', (error) => {

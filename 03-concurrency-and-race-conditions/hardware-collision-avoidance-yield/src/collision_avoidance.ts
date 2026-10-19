@@ -25,12 +25,15 @@ export function createCollisionAvoidanceRuntime() {
 
 export async function waitForHumanYield(
   evaluator: (expr: string) => Promise<boolean>,
-  maxWaitMs = 5000
-): Promise<void> {
+  maxWaitMs = 5000,
+  pollMs = 250
+): Promise<boolean> {
   const start = performance.now();
   while (performance.now() - start < maxWaitMs) {
     const intervening = await evaluator("Boolean(window.__humanIntervening)");
-    if (!intervening) return;
-    await new Promise((r) => setTimeout(r, 250));
+    if (!intervening) return true;
+    await new Promise((r) => setTimeout(r, pollMs));
   }
+  // The user is still moving: the caller must skip the action, not click anyway
+  return false;
 }

@@ -21,15 +21,19 @@ Standard HTTP API idempotency implementations rely solely on the `Idempotency-Ke
 
 ## 3. Architecture
 
-1. **Recursive Canonicalization:** `canonicalize()` traverses arrays and objects recursively, applying `Object.keys(value).sort()` at every nesting level to ensure deterministic JSON representation regardless of serialization order.
+1. **Recursive Canonicalization:** `canonicalize()` traverses arrays and objects recursively, applying `Object.keys(value).sort()` at every nesting level to ensure deterministic JSON representation regardless of serialization order. Values with `toJSON` (such as `Date`) are canonicalized through it; `Map` and `Set` throw instead of collapsing to `{}`.
 2. **Cryptographic SHA-256 Fingerprinting:** Computes `sha256(JSON.stringify(canonicalize(body)))`, generating a stable 64-character hexadecimal digest.
-3. **Fail-Closed Replay Assertion:** `assertIdempotentReplay()` cross-references the requested fingerprint with the existing stored transaction. If fingerprints diverge, it immediately throws HTTP 409 `IDEMPOTENCY_KEY_REUSED`.
-4. **Header Normalization:** Enforces strict regex validation (`^[A-Za-z0-9][A-Za-z0-9._:-]{7,199}$`) on idempotency keys to reject empty, malformed, or excessively long headers.
+3. **Fail-Closed Replay Assertion:** `assertIdempotentReplay()` cross-references the requested fingerprint with the existing stored transaction. If fingerprints diverge, or a stored key is replayed without a fingerprint, it immediately throws HTTP 409 `IDEMPOTENCY_KEY_REUSED`.
+4. **Header Normalization (original project, not in `src/`):** Enforces strict regex validation (`^[A-Za-z0-9][A-Za-z0-9._:-]{7,199}$`) on idempotency keys to reject empty, malformed, or excessively long headers.
 
 ```javascript
 // 1. Recursive deterministic JSON object key sorting
 function canonicalize(value) {
     if (value === null || typeof value !== 'object') return value;
+    // Date (and any toJSON type) is fingerprinted the way JSON.stringify would send it
+    if (typeof value.toJSON === 'function') return canonicalize(value.toJSON());
+    // Map and Set have no own keys and would all collapse to {}
+    if (value instanceof Map || value instanceof Set) throw new TypeError('Map and Set cannot be fingerprinted.');
     if (Array.isArray(value)) return value.map(canonicalize);
     return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
 }
@@ -41,7 +45,8 @@ function operationFingerprint(value) {
 
 // 3. Fail-closed replay verification preventing key reuse for mutated payloads
 function assertIdempotentReplay(existingFingerprint, requestedFingerprint) {
-    if (existingFingerprint && requestedFingerprint && existingFingerprint !== requestedFingerprint) {
+    // A stored key replayed without a fingerprint is a mismatch, not a pass
+    if (existingFingerprint && existingFingerprint !== requestedFingerprint) {
         throw new AppError('The idempotency key was already used for a different request.', {
             status: 409,
             code: 'IDEMPOTENCY_KEY_REUSED'
@@ -80,15 +85,17 @@ node --test test/idempotency.test.js
 
 ### Verified Output:
 ```text
-✔ canonicalize sorts object keys recursively regardless of insertion order (1.08ms)
-✔ mutated payload produces different fingerprint and triggers 409 replay rejection (0.59ms)
-ℹ tests 2
+✔ canonicalize sorts object keys recursively regardless of insertion order (1.377ms)
+✔ mutated payload produces different fingerprint and triggers 409 replay rejection (0.6102ms)
+✔ Date values change the fingerprint; Map and Set are rejected (2.117ms)
+✔ a stored key replayed without a fingerprint fails closed (0.2757ms)
+ℹ tests 4
 ℹ suites 0
-ℹ pass 2
+ℹ pass 4
 ℹ fail 0
 ```
 
-* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-17 (no external dependencies, built-in node:test and node:crypto)
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-19 (no external dependencies, built-in node:test)
 
 ---
 

@@ -27,8 +27,8 @@ In distributed architectures processing long-running browser analyses (multi-pag
 ## 3. Architecture
 
 1. **Heartbeat Lease Renewal:** An unref'd timer executes every `leaseMs / 3`, extending `lease_expires_at` in PostgreSQL as long as the worker process remains healthy.
-2. **Compare-And-Swap (CAS) Settlement:** When settling job completion, the worker passes its unique `leaseOwner` and `leaseToken`. If a timeout expired the lease and reassigned the job, the CAS query updates 0 rows, gracefully rejecting the zombie write.
-3. **Contained Path Sandboxing:** File cleanup routines use `isContainedPath(root, target)` to guarantee that retention workers can never delete files outside explicit artifact directories.
+2. **Compare-And-Swap (CAS) Settlement (original project, not in `src/`):** When settling job completion, the worker passes its unique `leaseOwner` and `leaseToken`. If a timeout expired the lease and reassigned the job, the CAS query updates 0 rows, gracefully rejecting the zombie write.
+3. **Contained Path Sandboxing (original project, not in `src/`):** File cleanup routines use `isContainedPath(root, target)` to guarantee that retention workers can never delete files outside explicit artifact directories.
 
 ---
 
@@ -50,6 +50,28 @@ See implementation in [`src/lease_heartbeat.js`](./src/lease_heartbeat.js).
 
 ---
 
-## 6. Visual Representation
+## 6. How to Verify
+
+Run the automated test suite using Node.js built-in test runner:
+
+```bash
+node --test test/lease_heartbeat.test.js
+```
+
+### Verified Output:
+```text
+✔ a failed renewal is logged and the next tick renews again (1705.0584ms)
+✔ no claim token means no heartbeat (0.3363ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+```
+
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-19 (no external dependencies, built-in node:test)
+
+---
+
+## 7. Visual Representation
 
 ![Visual Architecture Card](./assets/code-card.png)

@@ -29,7 +29,7 @@ Dynamic security scanners like OWASP ZAP are stateful and CPU/RAM heavy. When mu
 1. **Postgres Session Advisory Lock:** Uses `SELECT pg_try_advisory_lock(hashtext('wpa-zap-baseline'))` on a dedicated database pool client.
 2. **Dedicated Connection Retain:** The acquired connection is held open for the exact duration of the scan, tying the advisory lock lifetime directly to the TCP socket.
 3. **AbortSignal & Timeout Integration:** Propagates client cancellations and job timeouts via `signal.throwIfAborted()`, ensuring clean socket release without hung locks.
-4. **Idempotent Cleanup Hook:** Returns an asynchronous release function that unlocks the advisory mutex and releases the client back to the pool.
+4. **Idempotent Cleanup Hook:** Returns an asynchronous release function that unlocks the advisory mutex and releases the client back to the pool. If the unlock query fails, the client is destroyed with `client.release(true)` instead, because a pooled connection that still holds the session lock would let the next `acquire()` succeed.
 
 ---
 
@@ -51,6 +51,28 @@ See implementation in [`src/zap_lock.js`](./src/zap_lock.js).
 
 ---
 
-## 6. Visual Representation
+## 6. How to Verify
+
+Run the automated test suite using Node.js built-in test runner:
+
+```bash
+node --test test/zap_lock.test.js
+```
+
+### Verified Output:
+```text
+✔ a clean unlock returns the connection to the pool (2.0433ms)
+✔ a failed unlock destroys the connection instead of pooling it (0.3364ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+```
+
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-19 (no external dependencies, built-in node:test)
+
+---
+
+## 7. Visual Representation
 
 ![Visual Architecture Card](./assets/code-card.png)

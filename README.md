@@ -16,7 +16,7 @@ Instead of grouping solutions by ephemeral project names, case studies are organ
 .
 ├── 01-networking-and-io/              # Socket framing, protocol engines, raw I/O
 ├── 02-security-and-sandboxing/        # Mid-flight pause, SSRF, seccomp, WebAuthn, envelope encryption
-├── 03-concurrency-and-race-conditions/# Advisory locks, distributed mutexes, sliding window upserts
+├── 03-concurrency-and-race-conditions/# Advisory locks, distributed mutexes, fixed window upserts
 ├── 04-memory-and-performance/         # Zero-copy parsing, RAM reverse-scraping, GC mitigation
 ├── 05-os-and-process-architecture/    # Subprocess lifecycle, SQLite file-lock bypasses, DPAPI
 ├── 06-autonomous-agents-and-automation/# Atomic intent macros, deterministic DOM geometry
@@ -64,11 +64,11 @@ Browse the complete index of 67 case studies below. Click any problem to jump di
 * [**How to eliminate the concurrent dual-downgrade race condition on privileged accounts under PostgreSQL READ COMMITTED?**](#postgres-advisory-lock-last-super-admin-race)
 * [**How to strictly enforce multi-tenant seat allocation limits under concurrent invitation spikes using PostgreSQL triggers?**](#row-advisory-lock-workspace-seat-limits)
 * [**How to build a distributed FIFO mutex for heavy vulnerability scanning workers without Redis or external queue bloat?**](#postgres-distributed-mutex-scanner-serialization)
-* [**How to implement atomic sliding window rate limiting in PostgreSQL without Redis or Lua scripts?**](#postgres-atomic-sliding-window-rate-limit)
+* [**How to implement atomic fixed window rate limiting in PostgreSQL without Redis or Lua scripts?**](#postgres-atomic-sliding-window-rate-limit)
 * [**How to fence zombie worker overwrites during long-running distributed analysis tasks using heartbeat leases and CAS?**](#distributed-job-lease-heartbeat-cas-settlement)
 * [**How to prevent state corruption from mutated payloads under reused Idempotency-Keys using canonical JSON SHA-256 fingerprinting?**](#canonicalized-json-idempotency-fingerprint)
 * [**How to prevent Node.js process crashes during planned PostgreSQL restarts and eliminate queue migration deadlocks?**](#unhandled-queue-event-fail-closed-provisioning)
-* [**How to eliminate corporate NAT rate-limit starvation and implement atomic sliding windows in PostgreSQL?**](#hierarchical-composite-rate-limit-partitioning)
+* [**How to eliminate corporate NAT rate-limit starvation and implement atomic fixed windows in PostgreSQL?**](#hierarchical-composite-rate-limit-partitioning)
 * [**How to extract 1024-point audio buffers for real-time FFT spectrum visualizers without audio thread mutex blocking?**](#nonblocking-try-lock-audio-buffer-swap)
 * [**How to eliminate cascading DOM reflows and premature flushes in nested reactive updates using depth tracking and Set deduplication?**](#nested-reactive-batch-deduplication)
 
@@ -296,9 +296,9 @@ Click on any engineering challenge below to jump directly to the case study, arc
   * **Outcome:** Serializes singleton jobs across application instances using transaction-scoped PostgreSQL advisory locks with automatic crash release.
 
 <a id="postgres-atomic-sliding-window-rate-limit"></a>
-* ### [👉 How to implement atomic sliding window rate limiting in PostgreSQL without Redis or Lua scripts?](./03-concurrency-and-race-conditions/postgres-atomic-sliding-window-rate-limit)
+* ### [👉 How to implement atomic fixed window rate limiting in PostgreSQL without Redis or Lua scripts?](./03-concurrency-and-race-conditions/postgres-atomic-sliding-window-rate-limit)
   * **The Challenge:** Multi-pod API rate limiting typically forces teams to deploy Redis clusters with complex Lua scripts. In-memory maps fail behind load balancers.
-  * **The Engineering Fix:** Single-query PostgreSQL atomic `INSERT ... ON CONFLICT (namespace, key) DO UPDATE` calculating elapsed sliding windows inside SQL `CASE` expressions in 1 roundtrip.
+  * **The Engineering Fix:** Single-query PostgreSQL atomic `INSERT ... ON CONFLICT (namespace, key) DO UPDATE` calculating elapsed fixed windows inside SQL `CASE` expressions in 1 roundtrip.
   * **Outcome:** Propagates rate limit state across application instances in atomic SQL queries without Redis dependencies.
 
 <a id="distributed-job-lease-heartbeat-cas-settlement"></a>
@@ -320,9 +320,9 @@ Click on any engineering challenge below to jump directly to the case study, arc
   * **Outcome:** Re-establishes dropped database connections with top-level error listeners and validates queue dispatches against known job definitions.
 
 <a id="hierarchical-composite-rate-limit-partitioning"></a>
-* ### [👉 How to eliminate corporate NAT rate-limit starvation and implement atomic sliding windows in PostgreSQL?](./03-concurrency-and-race-conditions/hierarchical-composite-rate-limit-partitioning)
+* ### [👉 How to eliminate corporate NAT rate-limit starvation and implement atomic fixed windows in PostgreSQL?](./03-concurrency-and-race-conditions/hierarchical-composite-rate-limit-partitioning)
   * **The Challenge:** IP-based rate limiting blocks entire corporate offices behind shared NAT gateways. API-key-only limits allow single scripts to exhaust team quotas. Deploying Redis adds infrastructure overhead and cluster failure modes.
-  * **The Engineering Fix:** Hierarchical composite key generator: `workspace:{id}:key:{apiKey}` falls back to `workspace:{id}:ip:{ip}` and raw IP. Single-query PostgreSQL atomic sliding window upsert using `INSERT ... ON CONFLICT DO UPDATE SET hits = ...` with inline interval calculations in 1 roundtrip.
+  * **The Engineering Fix:** Hierarchical composite key generator: `workspace:{id}:key:{apiKey}` falls back to `workspace:{id}:ip:{ip}` and raw IP. Single-query PostgreSQL atomic fixed window upsert using `INSERT ... ON CONFLICT DO UPDATE SET hits = ...` with inline interval calculations in 1 roundtrip.
   * **Outcome:** Applies multi-tiered rate limiting with atomic token replenishment directly in SQL without Redis dependencies.
 
 <a id="nonblocking-try-lock-audio-buffer-swap"></a>
