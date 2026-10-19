@@ -12,3 +12,5 @@ services:
     networks: [data-internal, analysis-egress] # Zero auth/Stripe/AI secrets; cap_drop: ALL
   ai-service:
     networks: [app-internal, ai-egress] # Isolated AI provider token; no database access
+  email-service:
+    networks: [app-internal, email-egress] # Isolated email provider key; no database access

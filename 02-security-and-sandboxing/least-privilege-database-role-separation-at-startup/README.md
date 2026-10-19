@@ -33,7 +33,7 @@ Most web backends connect to PostgreSQL using a single administrative or generic
    * `wpa_worker`: Browser analysis workers (SELECT, INSERT, UPDATE on scan/source tables; **no DELETE permissions** on event history, reports, or users).
    * `wpa_maintenance`: Exclusive narrowly-scoped DELETE authority for data retention and confirmed workspace purging.
 2. **Fail-Closed Startup Role Attestation:** On boot, workers query `SELECT current_user AS role` and crash immediately with `WORKER_DATABASE_ROLE_MISMATCH` if the active role does not match `DATABASE_EXPECTED_ROLE`.
-3. **Mandatory Connection String Timeouts:** URL strings strictly enforce 4 timeouts: `connect_timeout`, `statement_timeout`, `lock_timeout`, and `idle_in_transaction_session_timeout`.
+3. **Mandatory Connection String Timeouts (original project, not in `src/`):** URL strings strictly enforce 4 timeouts: `connect_timeout`, `statement_timeout`, `lock_timeout`, and `idle_in_transaction_session_timeout`.
 
 ---
 
@@ -51,7 +51,7 @@ _Qualitative comparison. Numbers appear only where a script in this folder measu
 
 ## 5. Implementation
 
-See implementation in [`src/database_roles.sql`](./src/database_roles.sql).
+See implementation in [`src/database_roles.sql`](./src/database_roles.sql) (roles) and [`src/assert_database_role.js`](./src/assert_database_role.js) (startup attestation).
 
 ---
 

@@ -26,7 +26,7 @@ In high-security administrator planes mandating phishing-resistant FIDO2/WebAuth
 
 ## 3. Architecture
 
-1. **Serialized Atomic Key Deletion:** Protects passkey deletion with application middleware and per-user atomic locking, re-evaluating credentials inside the lock and throwing `409 ADMIN_FINAL_PASSKEY_REQUIRED` if only one key remains.
+1. **Serialized Atomic Key Deletion:** Protects passkey deletion with application middleware and per-user atomic locking, re-evaluating credentials inside the lock and throwing `409 ADMIN_FINAL_PASSKEY_REQUIRED` if only one key remains. The delete itself is scoped by `userId`, so a passkey ID from another account deletes nothing and returns 404.
 2. **Show-Once CSPRNG Recovery Codes:** 10 recovery codes generated with cryptographic randomness, shown only in the initial generation response, and stored strictly as HMAC-SHA256 hashes.
 3. **Session Revocation on Break-Glass:** Consuming a recovery code requires password + TOTP verification, consumes the single code, rotates out stale step-up markers, revokes active sessions, and increments the account's `security_version`.
 

@@ -26,7 +26,7 @@ Allowing users to upload ZIP archives for source code vulnerability auditing (OS
 
 ## 3. Architecture
 
-1. **POSIX Bitmask Inspection:** Inspects `(entry.externalFileAttributes >>> 16) & 0o170000` before opening entry streams. Symlinks (`0o120000`), FIFOs, and device nodes fail immediately.
+1. **POSIX Bitmask Inspection:** Inspects `(entry.externalFileAttributes >>> 16) & 0o170000` before opening entry streams. Only regular files (`0o100000`), directories (`0o040000`) and entries without POSIX mode bits pass; symlinks (`0o120000`), FIFOs, sockets and device nodes fail immediately.
 2. **4-Tier Quota Enforcement:** Validates entry count (max 20,000), total uncompressed bytes (max 500 MB), single-file ceiling (max 100 MB), and compression ratios (>200x for files >1 MB).
 3. **Stream-Level Chunk Interception:** An active `stream.on('data')` counter tracks written bytes in flight, aborting the stream and deleting file descriptors if headers lied.
 4. **Case-Folding & Exclusive Creation:** Tracks lowercase paths to stop case collisions, and writes files with `flags: 'wx', mode: 0o600` to ensure atomic, non-overwriting creation.

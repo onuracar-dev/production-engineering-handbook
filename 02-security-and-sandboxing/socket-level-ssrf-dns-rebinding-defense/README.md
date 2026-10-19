@@ -30,7 +30,7 @@ Standard DNS pre-validation fails against DNS Rebinding (Time-of-Check to Time-o
 
 1. **Microsecond Subnet Classification:** Using Node.js `net.BlockList()` to block all private, loopback, link-local, multicast, and CGNAT subnets for IPv4 and IPv6.
 2. **Socket-Level IP Pinning:** Upstream `net.connect()` and `https.request()` connect directly to the resolved and verified IP address (`target.address`). The original hostname is supplied strictly as the TLS SNI (`servername`) and HTTP `Host` header.
-3. **Fail-Closed CONNECT Policy:** In read-only passive scanning mode, opaque HTTP `CONNECT` tunnels are rejected with HTTP 405 because method payloads cannot be inspected inside the tunnel.
+3. **Fail-Closed CONNECT Policy (original project, not in `src/`):** In read-only passive scanning mode, opaque HTTP `CONNECT` tunnels are rejected with HTTP 405 because method payloads cannot be inspected inside the tunnel. `src/safe_proxy.js` is the CONNECT handler for the modes that do allow tunnels, so it accepts them and applies the IP pinning and quotas below.
 4. **Streaming Chunk Quotas:** In-flight byte counters destroy sockets mid-stream if transfer limits are exceeded, preventing streaming memory bombs.
 
 ---

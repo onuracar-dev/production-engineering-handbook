@@ -1,3 +1,5 @@
+// Excerpt from the original project (store, AppError, secret and verifyPasswordAndTotp come from the surrounding code).
+
 // 1. Concurrent deletion serialized per user; re-counts active credentials
 async function deletePasskeyWithLock({ store, userId, passkeyId }) {
     return store.withUserLock(userId, async () => {
@@ -8,7 +10,9 @@ async function deletePasskeyWithLock({ store, userId, passkeyId }) {
                 code: 'ADMIN_FINAL_PASSKEY_REQUIRED'
             });
         }
-        await store.deletePasskey(passkeyId);
+        // Scoped by userId: a passkeyId from another account deletes nothing
+        const deleted = await store.deletePasskey({ userId, passkeyId });
+        if (!deleted) throw new AppError('Passkey not found.', { status: 404 });
         await store.logAudit({ action: 'security.webauthn_removed', userId });
     });
 }

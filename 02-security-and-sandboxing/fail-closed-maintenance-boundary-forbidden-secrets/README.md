@@ -23,8 +23,8 @@ Background workers handling destructive operations—such as data retention prun
 
 1. **Forbidden Secret Auditing on Boot:** Scans `process.env` against 9 prohibited credentials (`BETTER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `SOURCE_ENCRYPTION_KEY`). If even one secret is found, the container crashes with `MAINTENANCE_SECRET_BOUNDARY_VIOLATION`.
 2. **Mandatory Execution Disablement:** Requires `BROWSER_EXECUTION_DISABLED`, `SOURCE_EXECUTION_DISABLED`, and `PDF_EXECUTION_DISABLED` to all be true, preventing destructive workers from executing untrusted code.
-3. **Database Role Verification:** Queries `SELECT current_user AS role` and crashes if the active role does not match `wpa_maintenance` (which has scoped DELETE grants on retention tables and no DDL authority).
-4. **Enforced Connection Parameters:** Enforces `connect_timeout`, `statement_timeout`, `lock_timeout`, and mandatory TLS verification in production.
+3. **Database Role Verification (original project, not in `src/`):** Queries `SELECT current_user AS role` and crashes if the active role does not match `wpa_maintenance` (which has scoped DELETE grants on retention tables and no DDL authority).
+4. **Enforced Connection Parameters (original project, not in `src/`):** Enforces `connect_timeout`, `statement_timeout`, `lock_timeout`, and mandatory TLS verification in production.
 
 ```javascript
 // 1. Blacklist of forbidden credentials that must NEVER exist in maintenance
@@ -39,7 +39,7 @@ function assertMaintenanceBoundary(env = process.env) {
     if (env.EXECUTION_ROLE !== 'maintenance') throw new Error('MAINTENANCE_ROLE_REQUIRED');
     
     // Verify execution engines are strictly disabled
-    const disabled = ['BROWSER_EXECUTION_DISABLED', 'SOURCE_EXECUTION_DISABLED'].filter((k) => !truthy(env[k]));
+    const disabled = ['BROWSER_EXECUTION_DISABLED', 'SOURCE_EXECUTION_DISABLED', 'PDF_EXECUTION_DISABLED'].filter((k) => !truthy(env[k]));
     if (disabled.length) throw new Error('MAINTENANCE_EXECUTION_DISABLED_REQUIRED: ' + disabled.join(', '));
     
     // Fail closed if any external API or admin secrets leaked in

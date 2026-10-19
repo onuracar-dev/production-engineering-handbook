@@ -1,3 +1,6 @@
+// Excerpt from the CONNECT handler of the original project's proxy class (validatePublicHost,
+// clientSocket and the quota fields come from the surrounding code). It runs only in modes that allow tunnels.
+
 // Upstream socket connects directly to validated IP, eliminating DNS Rebinding.
 const target = await validatePublicHost(hostname, port, {
     allowedPorts: this.allowedPorts,
