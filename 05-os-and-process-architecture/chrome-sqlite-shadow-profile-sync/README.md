@@ -29,9 +29,9 @@ However, launching a second Chrome instance with `--remote-debugging-port` point
 
 We engineered an Atomic Shadow Profile Sync in Rust:
 
-1. **Lock-Free Read Streaming:** While SQLite locks writing, the OS allows non-exclusive read operations on underlying database files.
+1. **Lock-Free Read Streaming:** While SQLite locks writing, the OS usually allows non-exclusive reads of the underlying database files. Where it does not (on Windows a running Chrome can hold `Cookies` with an exclusive lock), every copy error is returned as `Err` instead of handing back a silently cookie-less profile.
 2. **Master DPAPI Key Re-encryption:** We copy `Local State` which contains the DPAPI-encrypted master key used to decrypt cookies.
-3. **Surgical Cloning:** We surgically clone only `Preferences`, `Secure Preferences`, and `Network/Cookies` into a temporary shadow profile directory.
+3. **Surgical Cloning:** We clone only `Preferences`, `Secure Preferences`, and `Network/Cookies`; `Login Data` (saved passwords) and `Web Data` (autofill) stay behind. The target is a new directory per sync, named with the process ID and a timestamp, created with `DirBuilder::create` (fails if the path exists) and mode `0o700` on Unix, so another local user cannot pre-create or read it. The caller removes it after the session.
 4. **Isolated Launch:** The AI launches against the lightweight shadow profile, instantly running with existing authenticated session cookies preserved.
 
 ---
