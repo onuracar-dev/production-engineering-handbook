@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { redactText, SECRET_PATTERNS } from '../src/secret_redaction.js';
 
-test('redacts all 6 secret patterns reliably in arbitrary text', () => {
+test('redacts the core secret patterns in arbitrary text', () => {
     // 1. Private Key (RSA / EC / OPENSSH)
     const privateKeyText = 'Config error: -----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0m4w...\n-----END RSA PRIVATE KEY----- detected';
     assert.equal(

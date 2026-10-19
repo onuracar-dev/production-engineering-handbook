@@ -245,8 +245,8 @@ Click on any engineering challenge below to jump directly to the case study, arc
 <a id="llm-egress-secret-redaction-pipeline"></a>
 * ### [👉 How to sanitize private RSA keys, database URIs, and cloud tokens before egressing audit traces to external LLMs?](./02-security-and-sandboxing/llm-egress-secret-redaction-pipeline)
   * **The Challenge:** Submitting customer audit logs and vulnerability snippets to external AI providers (OpenAI, Gemini, OpenRouter) risks leaking root database passwords, private keys, Stripe keys, and JWTs.
-  * **The Engineering Fix:** Pre-egress redaction pipeline: null-byte strip (`replace(/\0/g, '')`), length clamping, and 6 frozen regex filters scrubbing private keys (`[redacted-private-key]`), tokens (`[redacted-secret]`), JWTs (`[redacted-jwt]`), and database connection strings (`postgres://[redacted]@`).
-  * **Outcome:** Neutralizes 6 credential patterns, strips null bytes, and clamps text buffers before external LLM prompt transmission.
+  * **The Engineering Fix:** Pre-egress redaction pipeline: null-byte strip (`replace(/\0/g, '')`), length clamping, and frozen regex filters scrubbing private keys of any PEM flavour, including one cut off by the clamp (`[redacted-private-key]`), API tokens such as Stripe, OpenRouter, AWS and Google keys (`[redacted-secret]`), JWTs (`[redacted-jwt]`), secret `export` lines, and credentials in database and broker URLs (`postgres://[redacted]@`).
+  * **Outcome:** Redacts the credential formats above (covered by node:test checks), strips null bytes, and clamps text buffers before external LLM prompt transmission.
 
 <a id="chromium-webrtc-udp-leak-quic-sandbox-flags"></a>
 * ### [👉 How to prevent WebRTC STUN UDP leaks and HTTP/3 QUIC proxy bypasses in headless Chromium?](./02-security-and-sandboxing/chromium-webrtc-udp-leak-quic-sandbox-flags)
@@ -486,7 +486,7 @@ Click on any engineering challenge below to jump directly to the case study, arc
 <a id="stripe-webhook-environment-catalog-fencing"></a>
 * ### [👉 How to prevent test-mode Stripe webhook replays and cross-account spoofing from granting unearned subscriptions?](./07-fintech-and-billing-invariants/stripe-webhook-environment-catalog-fencing)
   * **The Challenge:** Validating webhook HMAC signatures only proves the payload was signed. Replaying test-mode events (`livemode: false`) against production or misrouting Stripe Connect accounts can inadvertently grant unearned paid subscriptions.
-  * **The Engineering Fix:** Derive expected livemode from secret key prefixes (`sk_live_` vs `sk_test_`). Reject production mismatches with HTTP 400 `BILLING_PROVIDER_ENVIRONMENT_MISMATCH`. Verify `event.account` strictly matches `catalog.accountId` before granting entitlements.
+  * **The Engineering Fix:** Derive expected livemode from the secret or restricted key prefix (`sk_live_`/`rk_live_` vs `sk_test_`/`rk_test_`). Reject production mismatches with HTTP 400 `BILLING_PROVIDER_ENVIRONMENT_MISMATCH`. Verify `event.account` strictly matches `catalog.accountId` before granting entitlements.
   * **Outcome:** Compares Stripe event livemode against secret key prefixes and validates connected account IDs before provisioning access.
 
 ---

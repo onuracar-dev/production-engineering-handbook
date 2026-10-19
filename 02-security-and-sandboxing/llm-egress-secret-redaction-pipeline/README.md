@@ -84,17 +84,17 @@ node --test test/secret_redaction.test.js
 
 ### Verified Output:
 ```text
-✔ redacts all 6 secret patterns reliably in arbitrary text (0.97ms)
-✔ pipeline strips null-bytes and clamps text to maxLength (0.54ms)
-✔ redacts a private key cut off by the length clamp (0.15ms)
-✔ redacts the key formats the README lists (0.10ms)
+✔ redacts the core secret patterns in arbitrary text (2.05ms)
+✔ pipeline strips null-bytes and clamps text to maxLength (0.25ms)
+✔ redacts a private key cut off by the length clamp (1.12ms)
+✔ redacts the key formats the README lists (0.18ms)
 ℹ tests 4
 ℹ suites 0
 ℹ pass 4
 ℹ fail 0
 ```
 
-* **Test Environment:** Node.js v24.22.0, Ubuntu 24.04, 2026-10-19 (no external dependencies, built-in node:test)
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-19 (no external dependencies, built-in node:test)
 
 ---
 
