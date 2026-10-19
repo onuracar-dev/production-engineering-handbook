@@ -1,8 +1,9 @@
 // 1. Derive expected live mode from cryptographic secret key prefix
 function expectedStripeLiveMode(config) {
     const secretKey = stripeCatalog(config).secretKey || '';
-    if (secretKey.startsWith('sk_live_')) return true;
-    if (secretKey.startsWith('sk_test_')) return false;
+    // Restricted keys (rk_) are scoped the same way as secret keys (sk_).
+    if (/^[sr]k_live_/.test(secretKey)) return true;
+    if (/^[sr]k_test_/.test(secretKey)) return false;
     return null;
 }
 

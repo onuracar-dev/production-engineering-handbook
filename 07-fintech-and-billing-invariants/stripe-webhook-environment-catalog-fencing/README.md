@@ -21,7 +21,7 @@ Verifying Stripe webhook signatures using `stripe.webhooks.constructEvent()` onl
 
 ## 3. Architecture
 
-1. **Cryptographic Key Prefix Inference:** `expectedStripeLiveMode()` inspects the server's configured secret key. If it begins with `sk_live_`, livemode must strictly be `true`; if `sk_test_`, livemode must be `false`.
+1. **Cryptographic Key Prefix Inference:** `expectedStripeLiveMode()` inspects the server's configured secret key. If it begins with `sk_live_` or `rk_live_` (restricted key), livemode must strictly be `true`; if `sk_test_` or `rk_test_`, livemode must be `false`.
 2. **Production Environment Assertion:** In `production`, if `expectedLiveMode` is unverified or `event.livemode` is missing, the request is immediately rejected with HTTP 503 `BILLING_PROVIDER_ENVIRONMENT_UNVERIFIED`.
 3. **Deterministic Mode Mismatch Fencing:** If `event.livemode !== expectedLiveMode`, the handler fails closed with HTTP 400 `BILLING_PROVIDER_ENVIRONMENT_MISMATCH`.
 4. **Stripe Connect Account Fencing:** Asserts that `event.account` matches the exact configured `catalog.accountId`, preventing multi-account cross-tenant replay attacks.
@@ -30,8 +30,9 @@ Verifying Stripe webhook signatures using `stripe.webhooks.constructEvent()` onl
 // 1. Derive expected live mode from cryptographic secret key prefix
 function expectedStripeLiveMode(config) {
     const secretKey = stripeCatalog(config).secretKey || '';
-    if (secretKey.startsWith('sk_live_')) return true;
-    if (secretKey.startsWith('sk_test_')) return false;
+    // Restricted keys (rk_) are scoped the same way as secret keys (sk_).
+    if (/^[sr]k_live_/.test(secretKey)) return true;
+    if (/^[sr]k_test_/.test(secretKey)) return false;
     return null;
 }
 
