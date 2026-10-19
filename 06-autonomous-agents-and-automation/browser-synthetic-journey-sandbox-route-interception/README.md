@@ -21,7 +21,7 @@ Executing automated synthetic user journeys against live customer websites intro
 
 ## 3. Architecture
 
-1. **Fail-Closed Network Route Interception:** Intercepts all browser network traffic via `page.route('**/*', ...)`. Restricts requests strictly to `GET`, `HEAD`, and `OPTIONS`. Any mutating method (`POST`, `PUT`, `DELETE`) or cross-origin destination is immediately aborted with `blockedbyclient`.
+1. **Fail-Closed Network Route Interception:** Intercepts all browser network traffic via `page.route('**/*', ...)`. Restricts requests strictly to `GET`, `HEAD`, and `OPTIONS`. Any mutating method (`POST`, `PUT`, `DELETE`) or cross-origin destination is immediately aborted with `blockedbyclient`. Three gaps need handling outside the route: the browser context is created with `serviceWorkers: 'block'` (Service-Worker-handled requests skip `page.route`), WebSockets are closed with `page.routeWebSocket`, and `page.route` sees only the first URL of a redirect chain, so a same-origin URL that redirects cross-origin is not caught here. Redirect targets are not re-checked in `src/`.
 2. **DOM-Level Click Safety Assertions:** Before clicking any element, evaluates its properties directly in browser DOM memory:
    * Anchor tags (`<a>`) must strictly match the current origin (`new URL(el.href).origin === location.origin`).
    * Buttons (`<button>`) must explicitly be `type="button"`. Any `type="submit"` button is strictly blocked.
@@ -40,6 +40,12 @@ await page.route('**/*', async (route) => {
         blockedRequests.push({ method: request.method(), url: request.url() });
         await route.abort('blockedbyclient');
     }
+});
+
+// WebSockets bypass page.route(); close every one (Playwright >= 1.48)
+await page.routeWebSocket(/.*/, (ws) => {
+    blockedRequests.push({ method: 'WEBSOCKET', url: ws.url() });
+    ws.close();
 });
 
 // 2. DOM-level click mutation guard rejecting form submit buttons & external links

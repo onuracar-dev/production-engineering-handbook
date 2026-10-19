@@ -30,6 +30,7 @@ Automated website crawlers face adversarial website architectures: infinite cale
 2. **Path Depth & Combinatorial Query Ceilings:** Restricts maximum URL path depth to 16 and clamps query parameter variants per unique path to 5, killing faceted search explosions.
 3. **Pagination Upper Bounds:** Imposes a strict ceiling on pagination numbers (`maxPaginationValue: 250`) preventing crawlers from crawling arbitrarily large pagination sequences.
 4. **Sitemap Decompression & Depth Fencing:** Caps sitemap decompression at 8 MB and nesting depth at 3, neutralizing XML expansion bombs.
+5. **Bounded Overrides:** `resolveDiscoveryLimits()` accepts per-scan overrides but clamps each one (sitemap depth at most 5, decompressed size at most 50 MB, the sitemaps.org per-file maximum); a missing or non-integer override falls back to the default.
 
 ---
 
@@ -51,6 +52,28 @@ See implementation in [`src/crawler_limits.js`](./src/crawler_limits.js).
 
 ---
 
-## 6. Visual Representation
+## 6. How to Verify
+
+Run the automated test suite using Node.js built-in test runner:
+
+```bash
+node --test test/crawler_limits.test.js
+```
+
+### Verified Output:
+```text
+✔ defaults include the sitemap and queue limits (1.3241ms)
+✔ overrides are clamped, and invalid values fall back to the default (0.1986ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+```
+
+* **Test Environment:** Node.js v24.17.0, Windows 11, 2026-10-19 (no external dependencies, built-in node:test)
+
+---
+
+## 7. Visual Representation
 
 ![Visual Architecture Card](./assets/code-card.png)

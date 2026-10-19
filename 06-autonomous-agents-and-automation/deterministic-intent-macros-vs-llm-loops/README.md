@@ -35,9 +35,9 @@ This introduces cumulative network latency across multi-turn reasoning loops, bu
 We replaced the 5-turn loop with an Atomic Client-Side Intent Macro (`searchAndSelect`):
 
 1. **Single High-Level Intent:** The LLM issues one atomic instruction: `search_and_select(query, index: 0)`.
-2. **Platform-Aware Heuristic Tree:** The client-side runtime automatically determines target platform inputs (YouTube search box, Google query bar, standard form inputs).
+2. **Platform-Aware Selector Tree:** On a results page that is already loaded, the runtime tries prioritized result selectors for YouTube, Google, DuckDuckGo-style and generic layouts until one matches.
 3. **Geometric Visibility Filtering:** Queries candidates with prioritized fallback selectors and filters them via `getBoundingClientRect()` and `offsetParent !== null` to guarantee element visibility before interaction.
-4. **Single-Evaluation Execution:** In a single browser evaluation tick, the query is typed, dispatched via `requestSubmit()`, scrolled into viewport center, and clicked deterministically.
+4. **Single-Evaluation Execution:** In a single browser evaluation tick, the chosen result is scrolled into viewport center and clicked, and its title and `href` are returned. Typing the query and submitting the search form happen before this step and are not part of `src/`.
 
 ---
 

@@ -6,6 +6,7 @@ export interface MacroSelectionResult {
   totalResults: number;
 }
 
+// Runs on an already loaded results page; `query` is only used in the error message.
 export function executeSearchAndSelectMacro(
   query: string,
   targetIndex: number = 0
@@ -17,7 +18,6 @@ export function executeSearchAndSelectMacro(
     '#search a:has(h3)',
     '.g a:has(h3)',
     '.g a',
-    '#search a h3',
     'main a[href]:has(h2, h3)',
     'article a[href]',
     '.result__title a',
