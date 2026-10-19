@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS wpa_user_plan_changes (
     UNIQUE(user_id, idempotency_key)
 );
 
--- 2. Database engine level immutability trigger blocking UPDATE & DELETE
+-- 2. Database engine level immutability trigger blocking UPDATE, DELETE & TRUNCATE
 CREATE OR REPLACE FUNCTION wpa_user_plan_changes_immutable() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -23,3 +23,10 @@ DROP TRIGGER IF EXISTS wpa_user_plan_changes_immutable ON wpa_user_plan_changes;
 CREATE TRIGGER wpa_user_plan_changes_immutable
 BEFORE UPDATE OR DELETE ON wpa_user_plan_changes
 FOR EACH ROW EXECUTE FUNCTION wpa_user_plan_changes_immutable();
+
+-- Row triggers never fire on TRUNCATE, so it needs its own statement-level trigger;
+-- the same function raises unconditionally.
+DROP TRIGGER IF EXISTS wpa_user_plan_changes_no_truncate ON wpa_user_plan_changes;
+CREATE TRIGGER wpa_user_plan_changes_no_truncate
+BEFORE TRUNCATE ON wpa_user_plan_changes
+FOR EACH STATEMENT EXECUTE FUNCTION wpa_user_plan_changes_immutable();
